@@ -2,6 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import numpy as np
+import psycopg2
+from dotenv import load_dotenv
+import os
+
+# Carregar variáveis de ambiente
+load_dotenv()
 
 # --- Configuração da Página ---
 st.set_page_config(
@@ -16,35 +22,160 @@ st.markdown(
 )
 
 
-# --- 1. Carregamento dos Dados ---
-# O arquivo deve estar no mesmo diretório ou dentro de 'assets/'
+# --- 1. Configuração do Banco de Dados ---
+def get_db_connection():
+    """Obtém conexão com o banco de dados PostgreSQL"""
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        st.error("Variável de ambiente DATABASE_URL não configurada.")
+        st.info(
+            "Configure a variável DATABASE_URL no arquivo .env ou nas variáveis de ambiente."
+        )
+        return None
+
+    try:
+        conn = psycopg2.connect(database_url)
+        return conn
+    except Exception as e:
+        st.error(f"Erro ao conectar ao banco de dados: {e}")
+        return None
+
+
+# --- 2. Carregamento dos Dados do Banco ---
 @st.cache_data(ttl=60)  # Cache por 60 segundos para permitir atualizações
 def load_data():
+    """Carrega dados de logística do banco de dados"""
+    conn = get_db_connection()
+    if conn is None:
+        return pd.DataFrame()
+
     try:
-        # Tenta carregar o arquivo simulado
-        df = pd.read_csv("assets/logistica_simulada.csv")
+        # Query para buscar dados da tabela logistica
+        query = """
+            SELECT 
+                data,
+                estado,
+                regiao,
+                rota_id,
+                tempo_resposta_previsto,
+                tempo_resposta_real,
+                status,
+                custo_logistico_usd,
+                emissao_co2_kg
+            FROM logistica
+            WHERE status != 'Em Rota'
+            ORDER BY data DESC
+        """
+        df = pd.read_sql_query(query, conn)
+
+        # Mapear colunas de snake_case para PascalCase
+        column_mapping = {
+            "data": "Data",
+            "estado": "Estado",
+            "regiao": "Regiao",
+            "rota_id": "Rota_ID",
+            "tempo_resposta_previsto": "Tempo_Resposta_Previsto",
+            "tempo_resposta_real": "Tempo_Resposta_Real",
+            "status": "Status",
+            "custo_logistico_usd": "Custo_Logistico_USD",
+            "emissao_co2_kg": "Emissao_CO2_kg",
+        }
+        df = df.rename(columns=column_mapping)
         df["Data"] = pd.to_datetime(df["Data"])
-        # Garantir que não há "Em Rota" em dados históricos
-        df = df[df["Status"] != "Em Rota"]
         return df
-    except FileNotFoundError:
-        st.error(
-            "Arquivo 'logistica_simulada.csv' não encontrado. Certifique-se de que o arquivo de dados simulados está no diretório correto."
-        )
-        return pd.DataFrame()  # Retorna DataFrame vazio em caso de erro
+    except Exception as e:
+        st.error(f"Erro ao carregar dados de logística: {e}")
+        return pd.DataFrame()
+    finally:
+        conn.close()
 
 
 @st.cache_data(ttl=60)
 def load_estoque_data():
+    """Carrega dados de estoque e demanda do banco de dados"""
+    conn = get_db_connection()
+    if conn is None:
+        return pd.DataFrame()
+
     try:
-        df_estoque = pd.read_csv("assets/demanda_estoque.csv")
+        # Query para buscar dados da tabela demanda_estoque
+        query = """
+            SELECT 
+                data,
+                estado,
+                regiao,
+                demanda_diaria,
+                entregas_concluidas,
+                entregas_atrasadas,
+                custo_total_usd,
+                custo_medio_usd,
+                emissao_total_co2_kg,
+                emissao_media_co2_kg,
+                tempo_medio_entrega_dias,
+                tempo_previsto_medio_dias,
+                estoque_inicial,
+                estoque_disponivel,
+                estoque_final,
+                reabastecimento,
+                reabastecimento_chegando,
+                stock_out,
+                demanda_atendida,
+                demanda_nao_atendida,
+                taxa_atendimento,
+                nivel_servico,
+                dias_estoque_restante,
+                ponto_reposicao,
+                indicador_estoque_baixo,
+                indicador_stock_out,
+                demanda_acumulada,
+                stock_out_acumulado,
+                custo_total_acumulado
+            FROM demanda_estoque
+            ORDER BY data DESC
+        """
+        df_estoque = pd.read_sql_query(query, conn)
+
+        # Mapear colunas de snake_case para PascalCase
+        column_mapping = {
+            "data": "Data",
+            "estado": "Estado",
+            "regiao": "Regiao",
+            "demanda_diaria": "Demanda_Diaria",
+            "entregas_concluidas": "Entregas_Concluidas",
+            "entregas_atrasadas": "Entregas_Atrasadas",
+            "custo_total_usd": "Custo_Total_USD",
+            "custo_medio_usd": "Custo_Medio_USD",
+            "emissao_total_co2_kg": "Emissao_Total_CO2_kg",
+            "emissao_media_co2_kg": "Emissao_Media_CO2_kg",
+            "tempo_medio_entrega_dias": "Tempo_Medio_Entrega_Dias",
+            "tempo_previsto_medio_dias": "Tempo_Previsto_Medio_Dias",
+            "estoque_inicial": "Estoque_Inicial",
+            "estoque_disponivel": "Estoque_Disponivel",
+            "estoque_final": "Estoque_Final",
+            "reabastecimento": "Reabastecimento",
+            "reabastecimento_chegando": "Reabastecimento_Chegando",
+            "stock_out": "Stock_Out",
+            "demanda_atendida": "Demanda_Atendida",
+            "demanda_nao_atendida": "Demanda_Nao_Atendida",
+            "taxa_atendimento": "Taxa_Atendimento",
+            "nivel_servico": "Nivel_Servico",
+            "dias_estoque_restante": "Dias_Estoque_Restante",
+            "ponto_reposicao": "Ponto_Reposicao",
+            "indicador_estoque_baixo": "Indicador_Estoque_Baixo",
+            "indicador_stock_out": "Indicador_Stock_Out",
+            "demanda_acumulada": "Demanda_Acumulada",
+            "stock_out_acumulado": "Stock_Out_Acumulado",
+            "custo_total_acumulado": "Custo_Total_Acumulado",
+        }
+        df_estoque = df_estoque.rename(columns=column_mapping)
         df_estoque["Data"] = pd.to_datetime(df_estoque["Data"])
         return df_estoque
-    except FileNotFoundError:
-        st.error(
-            "Arquivo 'demanda_estoque.csv' não encontrado. Execute primeiro o script gerar_demanda_estoque.py."
-        )
+    except Exception as e:
+        st.error(f"Erro ao carregar dados de estoque: {e}")
         return pd.DataFrame()
+    finally:
+        conn.close()
 
 
 df = load_data()

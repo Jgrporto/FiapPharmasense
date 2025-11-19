@@ -1,4 +1,3 @@
-
 services:
   streamlit:
     build:
@@ -12,7 +11,10 @@ services:
       - ./src:/app/src
     environment:
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql://pharmasense:pharmasense_pass@postgres:5432/pharmasense
     restart: unless-stopped
+    depends_on:
+      - postgres
   postgres:
     image: postgres:15
     environment:
