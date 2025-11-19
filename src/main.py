@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
 import psycopg2
 from dotenv import load_dotenv
@@ -16,7 +17,7 @@ st.set_page_config(
 
 st.title("🚚 Otimização Logística e Distribuição - PharmaSense AI")
 st.markdown(
-    "Dashboard de monitoramento e análise de eficiência da cadeia de suprimentos farmacêutica. [cite: 253, 254]"
+    "Dashboard de monitoramento e análise de eficiência da cadeia de suprimentos farmacêutica."
 )
 
 
@@ -64,7 +65,6 @@ def load_data():
         """
         df = pd.read_sql_query(query, conn)
 
-        # Mapear colunas de snake_case para PascalCase
         column_mapping = {
             "data": "Data",
             "estado": "Estado",
@@ -130,7 +130,6 @@ def load_estoque_data():
         """
         df_estoque = pd.read_sql_query(query, conn)
 
-        # Mapear colunas de snake_case para PascalCase
         column_mapping = {
             "data": "Data",
             "estado": "Estado",
@@ -182,11 +181,9 @@ tab1, tab2 = st.tabs(["📦 Logística", "📊 Estoque e Demanda"])
 
 st.sidebar.header("Filtros de Análise")
 
-# Filtros comuns para ambas as abas
 data_min = df["Data"].min().date()
 data_max = df["Data"].max().date()
 
-# Seletor de Período
 data_selecionada = st.sidebar.date_input(
     "Selecione o Período", [data_min, data_max], min_value=data_min, max_value=data_max
 )
@@ -205,7 +202,6 @@ else:
     df_filtered = df.copy()
     df_estoque_filtered = df_estoque.copy()
 
-# Seletor de Região
 regioes_unicas = ["Todas"] + sorted(df["Regiao"].unique().tolist())
 regiao_selecionada = st.sidebar.multiselect(
     "Filtrar por Região", regioes_unicas, default=["Todas"]
@@ -218,7 +214,6 @@ if "Todas" not in regiao_selecionada:
             df_estoque_filtered["Regiao"].isin(regiao_selecionada)
         ]
 
-# Seletor de Estado (se a coluna existir)
 if "Estado" in df.columns:
     estados_unicos = ["Todos"] + sorted(df_filtered["Estado"].unique().tolist())
     estado_selecionado = st.sidebar.multiselect(
@@ -256,7 +251,7 @@ with tab1:
         st.metric(
             label="Redução no Tempo de Resposta (Eficiência)",
             value=f"{reducao_tempo:.1f}%",
-            delta="Meta: 25%",  # Baseado no impacto esperado [cite: 232]
+            delta="Meta: 25%",
             delta_color="normal",
         )
 
@@ -280,7 +275,7 @@ with tab1:
         st.metric(
             label="Pegada de Carbono Média (Sustentabilidade)",
             value=f"{emissao_media:.1f} kg CO2",
-            delta="Redução de 20% (Simulada)",  # Baseado no impacto esperado [cite: 234]
+            delta="Redução de 20% (Simulada)",
             delta_color="inverse",
         )
 
@@ -444,6 +439,127 @@ with tab1:
         },
     )
     st.plotly_chart(fig_cost_emission, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("📊 Análise de Correlações")
+    st.markdown("Matriz de correlação entre variáveis de logística")
+
+    vars_correlacao = ["Tempo_Resposta_Real", "Custo_Logistico_USD", "Emissao_CO2_kg"]
+    df_corr = df_filtered[vars_correlacao].corr()
+
+    fig_corr = px.imshow(
+        df_corr,
+        text_auto=".2f",
+        aspect="auto",
+        color_continuous_scale="RdBu",
+        title="Matriz de Correlação - Variáveis de Logística",
+        labels=dict(color="Correlação"),
+    )
+    fig_corr.update_layout(height=500)
+    st.plotly_chart(fig_corr, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("📈 Análise Temporal Mensal")
+    st.markdown("Tendências mensais de desempenho logístico")
+
+    df_filtered["Ano_Mes"] = df_filtered["Data"].dt.to_period("M").astype(str)
+    df_mensal = (
+        df_filtered.groupby("Ano_Mes")
+        .agg(
+            {
+                "Tempo_Resposta_Real": "mean",
+                "Custo_Logistico_USD": "mean",
+                "Emissao_CO2_kg": "mean",
+                "Status": lambda x: (x == "Atrasado").sum() / len(x) * 100,
+            }
+        )
+        .reset_index()
+    )
+    df_mensal.columns = [
+        "Ano_Mes",
+        "Tempo_Medio",
+        "Custo_Medio",
+        "Emissao_Media",
+        "Taxa_Atraso",
+    ]
+
+    col_temp1, col_temp2 = st.columns(2)
+
+    with col_temp1:
+        fig_tempo_mensal = px.line(
+            df_mensal,
+            x="Ano_Mes",
+            y="Tempo_Medio",
+            markers=True,
+            title="Tempo Médio de Entrega Mensal",
+            labels={"Tempo_Medio": "Tempo (dias)", "Ano_Mes": "Mês"},
+        )
+        fig_tempo_mensal.update_xaxes(tickangle=45)
+        st.plotly_chart(fig_tempo_mensal, use_container_width=True)
+
+    with col_temp2:
+        fig_custo_mensal = px.line(
+            df_mensal,
+            x="Ano_Mes",
+            y="Custo_Medio",
+            markers=True,
+            title="Custo Médio Mensal (USD)",
+            labels={"Custo_Medio": "Custo (USD)", "Ano_Mes": "Mês"},
+        )
+        fig_custo_mensal.update_xaxes(tickangle=45)
+        st.plotly_chart(fig_custo_mensal, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("🏆 Rankings e Comparações")
+
+    col_rank1, col_rank2 = st.columns(2)
+
+    with col_rank1:
+        st.markdown("**Top 10 Estados - Maior Custo Total**")
+        df_custo_estado = (
+            df_filtered.groupby("Estado")["Custo_Logistico_USD"]
+            .sum()
+            .reset_index()
+            .sort_values("Custo_Logistico_USD", ascending=False)
+            .head(10)
+        )
+        df_custo_estado.columns = ["Estado", "Custo Total (USD)"]
+
+        fig_custo_estado = px.bar(
+            df_custo_estado,
+            x="Custo Total (USD)",
+            y="Estado",
+            orientation="h",
+            title="Top 10 Estados - Maior Custo Logístico",
+            color="Custo Total (USD)",
+            color_continuous_scale="Blues",
+        )
+        st.plotly_chart(fig_custo_estado, use_container_width=True)
+
+    with col_rank2:
+        st.markdown("**Top 10 Estados - Maior Emissão de CO2**")
+        df_emissao_estado = (
+            df_filtered.groupby("Estado")["Emissao_CO2_kg"]
+            .sum()
+            .reset_index()
+            .sort_values("Emissao_CO2_kg", ascending=False)
+            .head(10)
+        )
+        df_emissao_estado.columns = ["Estado", "Emissão Total (kg CO2)"]
+
+        fig_emissao_estado = px.bar(
+            df_emissao_estado,
+            x="Emissão Total (kg CO2)",
+            y="Estado",
+            orientation="h",
+            title="Top 10 Estados - Maior Emissão de CO2",
+            color="Emissão Total (kg CO2)",
+            color_continuous_scale="Oranges",
+        )
+        st.plotly_chart(fig_emissao_estado, use_container_width=True)
 
 with tab2:
     if df_estoque_filtered.empty:
@@ -670,3 +786,255 @@ with tab2:
 
         resumo_estados = resumo_estados.sort_values("Stock Out Total", ascending=False)
         st.dataframe(resumo_estados, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("📊 Análise de Correlações - Estoque e Demanda")
+    st.markdown("Matriz de correlação entre variáveis de estoque e demanda")
+
+    vars_correlacao_estoque = [
+        "Demanda_Diaria",
+        "Estoque_Final",
+        "Stock_Out",
+        "Taxa_Atendimento",
+        "Custo_Total_USD",
+        "Tempo_Medio_Entrega_Dias",
+    ]
+
+    vars_disponiveis = [
+        v for v in vars_correlacao_estoque if v in df_estoque_filtered.columns
+    ]
+    df_corr_estoque = df_estoque_filtered[vars_disponiveis].corr()
+
+    fig_corr_estoque = px.imshow(
+        df_corr_estoque,
+        text_auto=".2f",
+        aspect="auto",
+        color_continuous_scale="RdYlGn",
+        title="Matriz de Correlação - Variáveis de Estoque e Demanda",
+        labels=dict(color="Correlação"),
+    )
+    fig_corr_estoque.update_layout(height=600)
+    st.plotly_chart(fig_corr_estoque, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("📈 Análise Temporal Mensal - Estoque")
+    st.markdown("Tendências mensais de demanda, estoque e stock out")
+
+    df_estoque_filtered["Ano_Mes"] = (
+        df_estoque_filtered["Data"].dt.to_period("M").astype(str)
+    )
+    df_mensal_estoque = (
+        df_estoque_filtered.groupby("Ano_Mes")
+        .agg(
+            {
+                "Demanda_Diaria": "sum",
+                "Estoque_Final": "mean",
+                "Stock_Out": "sum",
+                "Taxa_Atendimento": "mean",
+                "Reabastecimento": "sum",
+            }
+        )
+        .reset_index()
+    )
+
+    col_temp_est1, col_temp_est2 = st.columns(2)
+
+    with col_temp_est1:
+        fig_demanda_mensal = go.Figure()
+        fig_demanda_mensal.add_trace(
+            go.Scatter(
+                x=df_mensal_estoque["Ano_Mes"],
+                y=df_mensal_estoque["Demanda_Diaria"],
+                name="Demanda Total",
+                line=dict(color="#00FFC6", width=2),
+                mode="lines+markers",
+            )
+        )
+        fig_demanda_mensal.add_trace(
+            go.Scatter(
+                x=df_mensal_estoque["Ano_Mes"],
+                y=df_mensal_estoque["Estoque_Final"],
+                name="Estoque Final Médio",
+                line=dict(color="#1DE9B6", width=2),
+                mode="lines+markers",
+            )
+        )
+        fig_demanda_mensal.update_layout(
+            title="Demanda e Estoque Mensal",
+            xaxis_title="Mês",
+            yaxis_title="Quantidade",
+            hovermode="x unified",
+            height=400,
+        )
+        fig_demanda_mensal.update_xaxes(tickangle=45)
+        st.plotly_chart(fig_demanda_mensal, use_container_width=True)
+
+    with col_temp_est2:
+        fig_stock_mensal = go.Figure()
+        fig_stock_mensal.add_trace(
+            go.Scatter(
+                x=df_mensal_estoque["Ano_Mes"],
+                y=df_mensal_estoque["Stock_Out"],
+                name="Stock Out Total",
+                line=dict(color="#FF6B6B", width=2),
+                mode="lines+markers",
+                yaxis="y",
+            )
+        )
+        fig_stock_mensal.add_trace(
+            go.Scatter(
+                x=df_mensal_estoque["Ano_Mes"],
+                y=df_mensal_estoque["Taxa_Atendimento"],
+                name="Taxa de Atendimento (%)",
+                line=dict(color="#FFD93D", width=2),
+                mode="lines+markers",
+                yaxis="y2",
+            )
+        )
+        fig_stock_mensal.update_layout(
+            title="Stock Out e Taxa de Atendimento Mensal",
+            xaxis_title="Mês",
+            yaxis=dict(title="Stock Out Total", side="left"),
+            yaxis2=dict(title="Taxa de Atendimento (%)", side="right", overlaying="y"),
+            hovermode="x unified",
+            height=400,
+        )
+        fig_stock_mensal.update_xaxes(tickangle=45)
+        st.plotly_chart(fig_stock_mensal, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("🏆 Rankings de Estoque e Demanda")
+
+    col_rank_est1, col_rank_est2 = st.columns(2)
+
+    with col_rank_est1:
+        st.markdown("**Top 10 Estados - Maior Demanda Total**")
+        df_demanda_estado = (
+            df_estoque_filtered.groupby("Estado")["Demanda_Diaria"]
+            .sum()
+            .reset_index()
+            .sort_values("Demanda_Diaria", ascending=False)
+            .head(10)
+        )
+        df_demanda_estado.columns = ["Estado", "Demanda Total"]
+
+        fig_demanda_estado = px.bar(
+            df_demanda_estado,
+            x="Demanda Total",
+            y="Estado",
+            orientation="h",
+            title="Top 10 Estados - Maior Demanda Total",
+            color="Demanda Total",
+            color_continuous_scale="Blues",
+        )
+        st.plotly_chart(fig_demanda_estado, use_container_width=True)
+
+    with col_rank_est2:
+        st.markdown("**Top 10 Estados - Melhor Taxa de Atendimento**")
+        df_atendimento_estado = (
+            df_estoque_filtered.groupby("Estado")["Taxa_Atendimento"]
+            .mean()
+            .reset_index()
+            .sort_values("Taxa_Atendimento", ascending=False)
+            .head(10)
+        )
+        df_atendimento_estado.columns = ["Estado", "Taxa de Atendimento (%)"]
+
+        fig_atendimento_estado = px.bar(
+            df_atendimento_estado,
+            x="Taxa de Atendimento (%)",
+            y="Estado",
+            orientation="h",
+            title="Top 10 Estados - Melhor Taxa de Atendimento",
+            color="Taxa de Atendimento (%)",
+            color_continuous_scale="Greens",
+        )
+        st.plotly_chart(fig_atendimento_estado, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("🔄 Análise de Reabastecimento")
+    st.markdown("Análise de reabastecimentos por região e estado")
+
+    col_reab1, col_reab2 = st.columns(2)
+
+    with col_reab1:
+        st.markdown("**Total de Reabastecimentos por Região**")
+        df_reab_regiao = (
+            df_estoque_filtered.groupby("Regiao")["Reabastecimento"]
+            .sum()
+            .reset_index()
+            .sort_values("Reabastecimento", ascending=False)
+        )
+
+        fig_reab_regiao = px.bar(
+            df_reab_regiao,
+            x="Regiao",
+            y="Reabastecimento",
+            title="Total de Reabastecimentos por Região",
+            color="Reabastecimento",
+            color_continuous_scale="Viridis",
+            labels={"Reabastecimento": "Total Reabastecimentos", "Regiao": "Região"},
+        )
+        st.plotly_chart(fig_reab_regiao, use_container_width=True)
+
+    with col_reab2:
+        st.markdown("**Top 10 Estados - Mais Reabastecimentos**")
+        df_reab_estado = (
+            df_estoque_filtered.groupby("Estado")["Reabastecimento"]
+            .sum()
+            .reset_index()
+            .sort_values("Reabastecimento", ascending=False)
+            .head(10)
+        )
+        df_reab_estado.columns = ["Estado", "Total Reabastecimentos"]
+
+        fig_reab_estado = px.bar(
+            df_reab_estado,
+            x="Total Reabastecimentos",
+            y="Estado",
+            orientation="h",
+            title="Top 10 Estados - Mais Reabastecimentos",
+            color="Total Reabastecimentos",
+            color_continuous_scale="Purples",
+        )
+        st.plotly_chart(fig_reab_estado, use_container_width=True)
+
+    st.markdown("---")
+
+    st.subheader("📊 Comparação: Demanda Atendida vs Não Atendida")
+
+    df_atend_vs_nao = (
+        df_estoque_filtered.groupby("Regiao")
+        .agg({"Demanda_Atendida": "sum", "Demanda_Nao_Atendida": "sum"})
+        .reset_index()
+    )
+
+    fig_atend_comparacao = go.Figure()
+    fig_atend_comparacao.add_trace(
+        go.Bar(
+            x=df_atend_vs_nao["Regiao"],
+            y=df_atend_vs_nao["Demanda_Atendida"],
+            name="Demanda Atendida",
+            marker_color="#00FFC6",
+        )
+    )
+    fig_atend_comparacao.add_trace(
+        go.Bar(
+            x=df_atend_vs_nao["Regiao"],
+            y=df_atend_vs_nao["Demanda_Nao_Atendida"],
+            name="Demanda Não Atendida",
+            marker_color="#FF6B6B",
+        )
+    )
+    fig_atend_comparacao.update_layout(
+        title="Demanda Atendida vs Não Atendida por Região",
+        xaxis_title="Região",
+        yaxis_title="Demanda",
+        barmode="group",
+        height=500,
+    )
+    st.plotly_chart(fig_atend_comparacao, use_container_width=True)
