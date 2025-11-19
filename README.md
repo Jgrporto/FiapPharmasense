@@ -1,20 +1,39 @@
 # 🚚 PharmaSense AI - Otimização Logística e Distribuição
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fiappharmasense.streamlit.app/)
+[![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)](https://www.python.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue.svg)](https://www.postgresql.org/)
+[![Neon](https://img.shields.io/badge/Neon-PostgreSQL%20Serverless-green.svg)](https://neon.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://www.docker.com/)
+
 Sistema de monitoramento e análise de eficiência da cadeia de suprimentos farmacêutica, desenvolvido para otimizar processos logísticos, reduzir custos e melhorar a sustentabilidade ambiental.
+
+## 🌐 Acesso ao Projeto
+
+**🔗 [Acesse o Dashboard Online](https://fiappharmasense.streamlit.app/)**
+
+O projeto está disponível online através do Streamlit Cloud, utilizando [Neon](https://neon.com/) como banco de dados PostgreSQL serverless. Acesse o link acima para visualizar o dashboard interativo sem necessidade de instalação local.
+
+> ⚡ **Acesso Rápido**: [https://fiappharmasense.streamlit.app/](https://fiappharmasense.streamlit.app/)
+> 
+> 🗄️ **Banco de Dados**: O projeto utiliza [Neon](https://neon.com/) - PostgreSQL serverless com recursos de autoscaling, branching e instant provisioning.
+
+---
 
 ## 📋 Índice
 
-- [Sobre o Projeto](#sobre-o-projeto)
-- [Funcionalidades](#funcionalidades)
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)
-- [Estrutura do Projeto](#estrutura-do-projeto)
-- [Pré-requisitos](#pré-requisitos)
-- [Instalação e Configuração](#instalação-e-configuração)
-- [Uso](#uso)
-- [Dados](#dados)
-- [Notebooks](#notebooks)
-- [Docker](#docker)
-- [Comandos Make](#comandos-make)
+- [Acesso ao Projeto](#-acesso-ao-projeto)
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Funcionalidades](#-funcionalidades)
+- [Tecnologias Utilizadas](#️-tecnologias-utilizadas)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Pré-requisitos](#-pré-requisitos)
+- [Instalação e Configuração](#-instalação-e-configuração)
+- [Uso](#-uso)
+- [Dados](#-dados)
+- [Notebooks](#-notebooks)
+- [Docker](#-docker)
+- [Comandos Make](#-comandos-make)
 
 ## 🎯 Sobre o Projeto
 
@@ -58,6 +77,7 @@ O **PharmaSense AI** é uma plataforma de análise e otimização logística des
 
 ### Banco de Dados
 - **PostgreSQL 15**: Banco de dados relacional
+- **[Neon](https://neon.com/)**: PostgreSQL serverless para produção (utilizado na versão online)
 - **psycopg2**: Driver Python para PostgreSQL
 
 ### Infraestrutura
@@ -102,6 +122,8 @@ Antes de começar, certifique-se de ter instalado:
 
 ## 🚀 Instalação e Configuração
 
+> 💡 **Dica**: Se você não quiser instalar o projeto localmente, você pode acessar a versão online em [https://fiappharmasense.streamlit.app/](https://fiappharmasense.streamlit.app/)
+
 ### Opção 1: Execução com Docker (Recomendado)
 
 1. **Clone o repositório** (se aplicável):
@@ -124,6 +146,7 @@ docker compose up -d
 
 3. **Acesse o dashboard**:
    - Abra seu navegador em: `http://localhost:8501`
+   - Ou acesse a versão online: [https://fiappharmasense.streamlit.app/](https://fiappharmasense.streamlit.app/)
 
 ### Opção 2: Execução Local
 
@@ -138,10 +161,12 @@ uv sync
 ```
 
 2. **Configure o banco de dados PostgreSQL**:
-   - Crie um arquivo `.env` na raiz do projeto:
+   - Para execução local, crie um arquivo `.env` na raiz do projeto:
 ```env
 DATABASE_URL=postgresql://pharmasense:pharmasense_pass@localhost:5432/pharmasense
 ```
+   
+   - **Nota**: A versão online do projeto utiliza [Neon](https://neon.com/) como banco de dados serverless. A variável de ambiente `DATABASE_URL` na versão online está configurada para usar o Neon PostgreSQL.
 
 3. **Inicie o banco de dados** (se usar Docker apenas para PostgreSQL):
 ```bash
@@ -162,6 +187,13 @@ uv run streamlit run src/main.py
 ```
 
 ## 💻 Uso
+
+### Acesso ao Dashboard
+
+Você pode acessar o dashboard de duas formas:
+
+1. **Online (Recomendado)**: Acesse diretamente [https://fiappharmasense.streamlit.app/](https://fiappharmasense.streamlit.app/)
+2. **Local**: Execute a aplicação seguindo as instruções de instalação acima
 
 ### Dashboard Streamlit
 
@@ -213,6 +245,7 @@ O projeto inclui três notebooks Jupyter para análise e importação de dados:
 - Importa dados dos arquivos CSV para o banco de dados PostgreSQL
 - Cria as tabelas `logistica` e `demanda_estoque`
 - Requer configuração das variáveis de ambiente do banco de dados
+- **Nota**: A versão online utiliza [Neon](https://neon.com/) como banco de dados, e a variável `DATABASE_URL` deve estar configurada corretamente
 
 ### `analise_logistica.ipynb`
 - Análise exploratória dos dados de logística
@@ -297,6 +330,9 @@ Para aplicar os estilos, o Streamlit deve ser configurado para usar o arquivo CS
 
 ## 📝 Notas Importantes
 
+- **Acesso Online**: O projeto está disponível online em [https://fiappharmasense.streamlit.app/](https://fiappharmasense.streamlit.app/) - não é necessário instalação para visualizar
+- **Banco de Dados Online**: A versão online utiliza [Neon](https://neon.com/) como provedor de PostgreSQL serverless, oferecendo recursos como autoscaling, branching e instant provisioning
+- **Variável de Ambiente**: A variável `DATABASE_URL` na versão online está configurada para usar o Neon PostgreSQL. Para execução local, configure a variável apontando para seu banco PostgreSQL local
 - Os dados são simulados para fins de demonstração
 - O projeto utiliza `uv` como gerenciador de pacotes Python moderno
 - As configurações do banco de dados podem ser ajustadas no arquivo `.env`
@@ -323,4 +359,6 @@ Projeto desenvolvido para o **PharmaSense AI** - Otimização Logística e Distr
 ---
 
 **PharmaSense AI** - Transformando a cadeia de suprimentos farmacêutica através de dados e inteligência artificial.
+
+🔗 **[Acesse o Dashboard Online](https://fiappharmasense.streamlit.app/)**
 
