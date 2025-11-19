@@ -228,7 +228,7 @@ if "Estado" in df.columns:
             ]
 
 with tab1:
-    st.header("Métricas de Impacto e Desempenho Logístico")
+    st.header("📦 Métricas de Impacto e Desempenho Logístico")
 
     tempo_medio_real = df_filtered["Tempo_Resposta_Real"].mean()
     tempo_medio_previsto = df_filtered["Tempo_Resposta_Previsto"].mean()
@@ -324,16 +324,14 @@ with tab1:
             y="Taxa_Atraso",
             color="Regiao",
             labels={"Taxa_Atraso": "Taxa de Atraso (%)", "Regiao": "Região"},
-            title="Taxa de Atraso por Região (Alerta Geoespacial)",
+            title="Taxa de Atraso por Região",
         )
         st.plotly_chart(fig_region, use_container_width=True)
 
     st.markdown("---")
 
-    st.subheader("Monitoramento de Rotas (Alerta de Condições)")
-    st.caption(
-        "Visualização para Roberto Almeida: Mapeamento Geoespacial e Alertas [cite: 255]"
-    )
+    st.subheader("Monitoramento de Rotas")
+    st.caption("Visualização das rotas com alertas de condições")
 
     df_latest = df_filtered.sort_values("Data", ascending=False).head(20)
 
@@ -367,7 +365,7 @@ with tab1:
 
     if "Estado" in df_filtered.columns:
         st.markdown("---")
-        st.subheader("Desempenho por Estado")
+        st.subheader("🗺️ Desempenho por Estado")
 
         col_estado1, col_estado2 = st.columns(2)
 
@@ -413,7 +411,7 @@ with tab1:
             )
             st.plotly_chart(fig_estado_lento, use_container_width=True)
 
-    st.subheader("Análise de Otimização de Custo e Sustentabilidade")
+    st.subheader("💰 Análise de Otimização de Custo e Sustentabilidade")
 
     df_summary = (
         df_filtered.groupby("Regiao")
@@ -571,7 +569,7 @@ with tab2:
     st.header("📊 Análise de Estoque e Demanda")
     st.markdown("Monitoramento de estoque, stock out e demanda não atendida")
 
-    st.subheader("Métricas Principais de Estoque")
+    st.subheader("📊 Métricas Principais de Estoque")
 
     demanda_total = df_estoque_filtered["Demanda_Diaria"].sum()
     demanda_atendida = df_estoque_filtered["Demanda_Atendida"].sum()
@@ -663,7 +661,7 @@ with tab2:
 
     st.markdown("---")
 
-    st.subheader("Análise de Atendimento e Nível de Serviço")
+    st.subheader("✅ Análise de Atendimento e Nível de Serviço")
 
     col_atend1, col_atend2 = st.columns(2)
 
@@ -710,8 +708,8 @@ with tab2:
 
     st.markdown("---")
 
-    st.subheader("Monitoramento de Estoque e Stock Out")
-    st.caption("Últimos registros com indicadores de estoque baixo e stock out")
+    st.subheader("⚠️ Monitoramento de Estoque e Stock Out")
+    st.caption("Registros com indicadores de estoque baixo e stock out")
 
     df_monitor = (
         df_estoque_filtered[
@@ -757,7 +755,7 @@ with tab2:
 
     if "Estado" in df_estoque_filtered.columns:
         st.markdown("---")
-        st.subheader("Resumo por Estado")
+        st.subheader("📋 Resumo por Estado")
 
         resumo_estados = (
             df_estoque_filtered.groupby("Estado")
