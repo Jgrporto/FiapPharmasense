@@ -1,0 +1,28 @@
+
+services:
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pharmasense-streamlit
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./assets:/app/assets
+      - ./src:/app/src
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: pharmasense
+      POSTGRES_USER: pharmasense
+      POSTGRES_PASSWORD: pharmasense_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
