@@ -140,11 +140,7 @@ uv sync
 2. **Configure o banco de dados PostgreSQL**:
    - Crie um arquivo `.env` na raiz do projeto:
 ```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=pharmasense
-DB_USER=pharmasense
-DB_PASSWORD=pharmasense_pass
+DATABASE_URL=postgresql://pharmasense:pharmasense_pass@localhost:5432/pharmasense
 ```
 
 3. **Inicie o banco de dados** (se usar Docker apenas para PostgreSQL):
