@@ -6,8 +6,12 @@ import numpy as np
 import psycopg2
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 load_dotenv()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+ASSETS_DIR = BASE_DIR / "assets"
 
 st.set_page_config(
     page_title="PharmaSense AI - Otimização Logística",
@@ -40,12 +44,45 @@ def get_db_connection():
         return None
 
 
+def load_logistica_csv():
+    """Carrega dados de logA-stica a partir do CSV local"""
+    csv_path = ASSETS_DIR / "logistica_simulada.csv"
+    if not csv_path.exists():
+        st.error("Arquivo logistica_simulada.csv nA�o encontrado na pasta assets.")
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_csv(csv_path)
+        df["Data"] = pd.to_datetime(df["Data"])
+        return df
+    except Exception as e:
+        st.error(f"Erro ao carregar dados de logA-stica do CSV: {e}")
+        return pd.DataFrame()
+
+
+def load_estoque_csv():
+    """Carrega dados de estoque e demanda a partir do CSV local"""
+    csv_path = ASSETS_DIR / "demanda_estoque.csv"
+    if not csv_path.exists():
+        st.error("Arquivo demanda_estoque.csv nA�o encontrado na pasta assets.")
+        return pd.DataFrame()
+
+    try:
+        df = pd.read_csv(csv_path)
+        df["Data"] = pd.to_datetime(df["Data"])
+        return df
+    except Exception as e:
+        st.error(f"Erro ao carregar dados de estoque do CSV: {e}")
+        return pd.DataFrame()
+
+
 @st.cache_data(ttl=60)
 def load_data():
     """Carrega dados de logística do banco de dados"""
     conn = get_db_connection()
     if conn is None:
-        return pd.DataFrame()
+        st.info("Usando dados do CSV local para logA-stica.")
+        return load_logistica_csv()
 
     try:
         query = """
@@ -81,7 +118,8 @@ def load_data():
         return df
     except Exception as e:
         st.error(f"Erro ao carregar dados de logística: {e}")
-        return pd.DataFrame()
+        st.info("Usando dados do CSV local para logA-stica.")
+        return load_logistica_csv()
     finally:
         conn.close()
 
@@ -91,7 +129,8 @@ def load_estoque_data():
     """Carrega dados de estoque e demanda do banco de dados"""
     conn = get_db_connection()
     if conn is None:
-        return pd.DataFrame()
+        st.info("Usando dados do CSV local para estoque e demanda.")
+        return load_estoque_csv()
 
     try:
         query = """
@@ -166,7 +205,8 @@ def load_estoque_data():
         return df_estoque
     except Exception as e:
         st.error(f"Erro ao carregar dados de estoque: {e}")
-        return pd.DataFrame()
+        st.info("Usando dados do CSV local para estoque e demanda.")
+        return load_estoque_csv()
     finally:
         conn.close()
 
