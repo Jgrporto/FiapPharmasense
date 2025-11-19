@@ -30,17 +30,13 @@ def get_db_connection():
     database_url = os.getenv("DATABASE_URL")
 
     if not database_url:
-        st.error("Variável de ambiente DATABASE_URL não configurada.")
-        st.info(
-            "Configure a variável DATABASE_URL no arquivo .env ou nas variáveis de ambiente."
-        )
         return None
 
     try:
         conn = psycopg2.connect(database_url)
         return conn
     except Exception as e:
-        st.error(f"Erro ao conectar ao banco de dados: {e}")
+        print(f"Erro ao conectar ao banco de dados: {e}")
         return None
 
 
@@ -48,7 +44,6 @@ def load_logistica_csv():
     """Carrega dados de logA-stica a partir do CSV local"""
     csv_path = ASSETS_DIR / "logistica_simulada.csv"
     if not csv_path.exists():
-        st.error("Arquivo logistica_simulada.csv nA�o encontrado na pasta assets.")
         return pd.DataFrame()
 
     try:
@@ -56,7 +51,7 @@ def load_logistica_csv():
         df["Data"] = pd.to_datetime(df["Data"])
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar dados de logA-stica do CSV: {e}")
+        print(f"Erro ao carregar dados de logA-stica do CSV: {e}")
         return pd.DataFrame()
 
 
@@ -64,7 +59,6 @@ def load_estoque_csv():
     """Carrega dados de estoque e demanda a partir do CSV local"""
     csv_path = ASSETS_DIR / "demanda_estoque.csv"
     if not csv_path.exists():
-        st.error("Arquivo demanda_estoque.csv nA�o encontrado na pasta assets.")
         return pd.DataFrame()
 
     try:
@@ -72,7 +66,7 @@ def load_estoque_csv():
         df["Data"] = pd.to_datetime(df["Data"])
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar dados de estoque do CSV: {e}")
+        print(f"Erro ao carregar dados de estoque do CSV: {e}")
         return pd.DataFrame()
 
 
@@ -81,7 +75,6 @@ def load_data():
     """Carrega dados de logística do banco de dados"""
     conn = get_db_connection()
     if conn is None:
-        st.info("Usando dados do CSV local para logA-stica.")
         return load_logistica_csv()
 
     try:
@@ -117,11 +110,11 @@ def load_data():
         df["Data"] = pd.to_datetime(df["Data"])
         return df
     except Exception as e:
-        st.error(f"Erro ao carregar dados de logística: {e}")
-        st.info("Usando dados do CSV local para logA-stica.")
+        print(f"Erro ao carregar dados de logística: {e}")
         return load_logistica_csv()
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 @st.cache_data(ttl=60)
@@ -129,7 +122,6 @@ def load_estoque_data():
     """Carrega dados de estoque e demanda do banco de dados"""
     conn = get_db_connection()
     if conn is None:
-        st.info("Usando dados do CSV local para estoque e demanda.")
         return load_estoque_csv()
 
     try:
@@ -204,11 +196,11 @@ def load_estoque_data():
         df_estoque["Data"] = pd.to_datetime(df_estoque["Data"])
         return df_estoque
     except Exception as e:
-        st.error(f"Erro ao carregar dados de estoque: {e}")
-        st.info("Usando dados do CSV local para estoque e demanda.")
+        print(f"Erro ao carregar dados de estoque: {e}")
         return load_estoque_csv()
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 df = load_data()
