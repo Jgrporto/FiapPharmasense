@@ -6,10 +6,8 @@ import psycopg2
 from dotenv import load_dotenv
 import os
 
-# Carregar variáveis de ambiente
 load_dotenv()
 
-# --- Configuração da Página ---
 st.set_page_config(
     page_title="PharmaSense AI - Otimização Logística",
     layout="wide",
@@ -22,7 +20,6 @@ st.markdown(
 )
 
 
-# --- 1. Configuração do Banco de Dados ---
 def get_db_connection():
     """Obtém conexão com o banco de dados PostgreSQL"""
     database_url = os.getenv("DATABASE_URL")
@@ -42,8 +39,7 @@ def get_db_connection():
         return None
 
 
-# --- 2. Carregamento dos Dados do Banco ---
-@st.cache_data(ttl=60)  # Cache por 60 segundos para permitir atualizações
+@st.cache_data(ttl=60)
 def load_data():
     """Carrega dados de logística do banco de dados"""
     conn = get_db_connection()
@@ -51,7 +47,6 @@ def load_data():
         return pd.DataFrame()
 
     try:
-        # Query para buscar dados da tabela logistica
         query = """
             SELECT 
                 data,
@@ -99,7 +94,6 @@ def load_estoque_data():
         return pd.DataFrame()
 
     try:
-        # Query para buscar dados da tabela demanda_estoque
         query = """
             SELECT 
                 data,
@@ -184,10 +178,8 @@ df_estoque = load_estoque_data()
 if df.empty:
     st.stop()
 
-# Criar abas
 tab1, tab2 = st.tabs(["📦 Logística", "📊 Estoque e Demanda"])
 
-# --- 2. Filtros Laterais ---
 st.sidebar.header("Filtros de Análise")
 
 # Filtros comuns para ambas as abas
@@ -240,12 +232,9 @@ if "Estado" in df.columns:
                 df_estoque_filtered["Estado"].isin(estado_selecionado)
             ]
 
-# ========== ABA 1: LOGÍSTICA ==========
 with tab1:
-    # --- 3. KPIs de Impacto (Redução e Eficiência) ---
     st.header("Métricas de Impacto e Desempenho Logístico")
 
-    # Cálculo de KPIs
     tempo_medio_real = df_filtered["Tempo_Resposta_Real"].mean()
     tempo_medio_previsto = df_filtered["Tempo_Resposta_Previsto"].mean()
     reducao_tempo = (
@@ -283,7 +272,7 @@ with tab1:
         st.metric(
             label="Taxa de Atraso (Ruptura)",
             value=f"{taxa_atraso:.1f}%",
-            delta="-5.0% (Simulado)",  # Alvo é reduzir ao máximo
+            delta="-5.0% (Simulado)",
             delta_color="inverse",
         )
 
@@ -297,10 +286,8 @@ with tab1:
 
     st.markdown("---")
 
-    # --- 4. Visualizações Detalhadas ---
     col_chart1, col_chart2 = st.columns(2)
 
-    # Gráfico 1: Eficiência de Distribuição ao Longo do Tempo
     with col_chart1:
         st.subheader("Tendência de Eficiência: Tempo Real vs. Previsto")
         df_trend = (
@@ -321,7 +308,6 @@ with tab1:
         fig_trend.update_layout(legend_title_text="Tempo de Resposta")
         st.plotly_chart(fig_trend, use_container_width=True)
 
-    # Gráfico 2: Desempenho por Região e Status (Mapeamento Geoespacial - Proxy)
     with col_chart2:
         st.subheader("Desempenho da Distribuição por Região")
         df_region = (
@@ -343,30 +329,25 @@ with tab1:
             y="Taxa_Atraso",
             color="Regiao",
             labels={"Taxa_Atraso": "Taxa de Atraso (%)", "Regiao": "Região"},
-            title="Taxa de Atraso por Região (Alerta Geoespacial)",  # Simulação de Alerta
+            title="Taxa de Atraso por Região (Alerta Geoespacial)",
         )
         st.plotly_chart(fig_region, use_container_width=True)
 
     st.markdown("---")
 
-    # --- 5. Tabela Detalhada (Monitoramento em Tempo Real - Conceito) ---
     st.subheader("Monitoramento de Rotas (Alerta de Condições)")
     st.caption(
         "Visualização para Roberto Almeida: Mapeamento Geoespacial e Alertas [cite: 255]"
     )
 
-    # Tabela com as últimas 20 rotas e destaque para atrasos
     df_latest = df_filtered.sort_values("Data", ascending=False).head(20)
 
     def highlight_status(s):
         if s.Status == "Atrasado":
-            return ["background-color: #ff6b6b; color: #000000"] * len(
-                s
-            )  # Vermelho mais forte
+            return ["background-color: #ff6b6b; color: #000000"] * len(s)
         else:
-            return [""] * len(s)  # Entregue sem destaque
+            return [""] * len(s)
 
-    # Definir ordem de colunas (incluir Estado se existir)
     column_order = [
         "Rota_ID",
         "Data",
@@ -389,7 +370,6 @@ with tab1:
         column_order=column_order,
     )
 
-    # --- 6. Análise por Estado (se disponível) ---
     if "Estado" in df_filtered.columns:
         st.markdown("---")
         st.subheader("Desempenho por Estado")
@@ -397,7 +377,6 @@ with tab1:
         col_estado1, col_estado2 = st.columns(2)
 
         with col_estado1:
-            # Top 10 estados mais rápidos
             df_estado_tempo = (
                 df_filtered.groupby("Estado")["Tempo_Resposta_Real"]
                 .mean()
@@ -419,7 +398,6 @@ with tab1:
             st.plotly_chart(fig_estado_rapido, use_container_width=True)
 
         with col_estado2:
-            # Top 10 estados mais lentos
             df_estado_tempo_lento = (
                 df_filtered.groupby("Estado")["Tempo_Resposta_Real"]
                 .mean()
@@ -440,7 +418,6 @@ with tab1:
             )
             st.plotly_chart(fig_estado_lento, use_container_width=True)
 
-    # --- 7. Insights de Otimização de Custo ---
     st.subheader("Análise de Otimização de Custo e Sustentabilidade")
 
     df_summary = (
@@ -468,7 +445,6 @@ with tab1:
     )
     st.plotly_chart(fig_cost_emission, use_container_width=True)
 
-# ========== ABA 2: ESTOQUE E DEMANDA ==========
 with tab2:
     if df_estoque_filtered.empty:
         st.warning(
@@ -479,7 +455,6 @@ with tab2:
     st.header("📊 Análise de Estoque e Demanda")
     st.markdown("Monitoramento de estoque, stock out e demanda não atendida")
 
-    # KPIs de Estoque
     st.subheader("Métricas Principais de Estoque")
 
     demanda_total = df_estoque_filtered["Demanda_Diaria"].sum()
@@ -526,7 +501,6 @@ with tab2:
 
     st.markdown("---")
 
-    # Gráficos de Estoque
     col_chart1, col_chart2 = st.columns(2)
 
     with col_chart1:
@@ -573,7 +547,6 @@ with tab2:
 
     st.markdown("---")
 
-    # Análise de Atendimento
     st.subheader("Análise de Atendimento e Nível de Serviço")
 
     col_atend1, col_atend2 = st.columns(2)
@@ -621,11 +594,9 @@ with tab2:
 
     st.markdown("---")
 
-    # Tabela de Monitoramento de Estoque
     st.subheader("Monitoramento de Estoque e Stock Out")
     st.caption("Últimos registros com indicadores de estoque baixo e stock out")
 
-    # Filtrar registros relevantes
     df_monitor = (
         df_estoque_filtered[
             (df_estoque_filtered["Indicador_Estoque_Baixo"] == 1)
@@ -668,7 +639,6 @@ with tab2:
             "✅ Nenhum registro com estoque baixo ou stock out no período selecionado."
         )
 
-    # Resumo por Estado
     if "Estado" in df_estoque_filtered.columns:
         st.markdown("---")
         st.subheader("Resumo por Estado")
