@@ -21,25 +21,25 @@ run:
 
 build:
 	@echo "Construindo imagem Docker..."
-	docker-compose build
+	docker compose build
 
 up:
 	@echo "Subindo container Docker..."
-	docker-compose up -d
+	docker compose up -d
 
 down:
 	@echo "Parando container Docker..."
-	docker-compose down
+	docker compose down
 
 logs:
 	@echo "Mostrando logs do container..."
-	docker-compose logs -f
+	docker compose logs -f
 
 restart:
 	@echo "Reiniciando container Docker..."
-	docker-compose restart
+	docker compose restart
 
 ps:
 	@echo "Containers em execução:"
-	docker-compose ps
+	docker compose ps
 
